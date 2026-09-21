@@ -2,10 +2,11 @@
 
 # Astra on RoboMME
 
-**A three-tiered system for long-horizon robotic manipulation**
+**A three-tier system for long-horizon robotic manipulation**
 
 Plan with **GPT-6 Astra** · Monitor with **Qwen3-VL** · Act with **π0.5**
 
+[![Blog](https://img.shields.io/badge/Blog-Project_page-8C1515)](https://bingaochen.github.io/Astra-on-RoboMME/)
 [![Benchmark](https://img.shields.io/badge/Benchmark-RoboMME-405c78)](https://robomme.github.io/)
 [![Monitor weights](https://img.shields.io/badge/🤗_Hugging_Face-Monitor_weights-e9b949)](https://huggingface.co/bingaochen/Astra-on-RoboMME-Monitor)
 [![License](https://img.shields.io/badge/License-Apache_2.0-68876b)](LICENSE)
@@ -24,7 +25,7 @@ to evaluate the system on RoboMME.
 
 ## Method
 
-![Three-tiered control loop: System 2 plans a grounded subtask; System 1 executes actions; System 1.5 checks completion and either continues execution or triggers replanning.](assets/method.png)
+![Three-tier control loop: System 2 plans a grounded subtask; System 1 executes actions; System 1.5 checks completion and either continues execution or triggers replanning.](assets/method.png)
 
 | Tier | Model | Responsibility |
 |---|---|---|
