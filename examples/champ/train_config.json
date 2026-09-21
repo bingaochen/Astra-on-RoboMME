@@ -1,0 +1,51 @@
+{
+  "model": "Qwen/Qwen3-VL-4B-Instruct",
+  "model_type": "qwen3_vl",
+  "dataset": [
+    "data/champ_v6/train.jsonl"
+  ],
+  "val_dataset": [
+    "data/champ_v6/val.jsonl"
+  ],
+  "split_dataset_ratio": 0.0,
+  "train_type": "lora",
+  "torch_dtype": "bfloat16",
+  "bf16": true,
+  "num_train_epochs": 2,
+  "per_device_train_batch_size": 4,
+  "per_device_eval_batch_size": 4,
+  "gradient_accumulation_steps": 2,
+  "learning_rate": 0.0001,
+  "lora_rank": 16,
+  "lora_alpha": 32,
+  "target_modules": [
+    "all-linear"
+  ],
+  "freeze_vit": true,
+  "freeze_aligner": true,
+  "gradient_checkpointing": true,
+  "vit_gradient_checkpointing": false,
+  "attn_impl": "flash_attention_2",
+  "packing": false,
+  "padding_free": false,
+  "max_length": 4096,
+  "truncation_strategy": "raise",
+  "save_strategy": "steps",
+  "save_steps": 500,
+  "save_total_limit": 3,
+  "eval_strategy": "steps",
+  "eval_steps": 500,
+  "logging_steps": 10,
+  "warmup_ratio": 0.05,
+  "dataset_num_proc": 8,
+  "dataloader_num_workers": 2,
+  "ddp_find_unused_parameters": false,
+  "seed": 42,
+  "data_seed": 42,
+  "report_to": [
+    "none"
+  ],
+  "add_version": false,
+  "output_dir": "runs/champ_v6_training/checkpoints",
+  "load_best_model_at_end": false
+}

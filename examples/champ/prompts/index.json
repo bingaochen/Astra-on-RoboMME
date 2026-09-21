@@ -1,0 +1,150 @@
+{
+  "BinFill": {
+    "file": "BinFill.md",
+    "sha256": "63752dca35940eefa3a8b584a40731c18a9df6ccb2ad0ef3bd3b358427c3d150",
+    "templates": [
+      "pick up the {ordinal} {color} cube at <y, x>",
+      "put it into the bin at <y, x>",
+      "press the button at <y, x>"
+    ]
+  },
+  "PickXtimes": {
+    "file": "PickXtimes.md",
+    "sha256": "5408a978bedff08591b849d70d7f960f652bf108be7d8947ce04252805db85f7",
+    "templates": [
+      "pick up the {color} cube at <y, x> for the {ordinal} time",
+      "place the {color} cube onto the target at <y, x>",
+      "press the button at <y, x> to stop"
+    ]
+  },
+  "SwingXtimes": {
+    "file": "SwingXtimes.md",
+    "sha256": "17ecf5c8afb21cea93c149caf6792aaa7ee834086307a4b20ef45b1ee1cecaec",
+    "templates": [
+      "pick up the {color} cube at <y, x>",
+      "move to the top of the right-side target at <y, x> for the {ordinal} time",
+      "move to the top of the left-side target at <y, x> for the {ordinal} time",
+      "put the {color} cube on the table",
+      "press the button at <y, x>"
+    ]
+  },
+  "StopCube": {
+    "file": "StopCube.md",
+    "sha256": "da81d9577a25cf2a0527bc7fc9726b55f1a5dbbd3075a2ad49c68a213f7e35d0",
+    "templates": [
+      "move to the top of the button at <y, x> to prepare",
+      "remain static",
+      "press the button to stop the cube on the target at <y, x>"
+    ]
+  },
+  "ButtonUnmask": {
+    "file": "ButtonUnmask.md",
+    "sha256": "098576d1484a8937d1c2cafba59d8561637d4896d0942ddae3d75b49c664a200",
+    "templates": [
+      "press the button at <y, x>",
+      "pick up the container at <y, x> that hides the {color} cube",
+      "put down the container"
+    ]
+  },
+  "ButtonUnmaskSwap": {
+    "file": "ButtonUnmaskSwap.md",
+    "sha256": "07fed10044ac2672f245c924669eb0e1a9c21dae130c353d5461155eab2cdd12",
+    "templates": [
+      "press the first button at <y, x>",
+      "press the second button at <y, x>",
+      "pick up the container at <y, x> that hides the {color} cube",
+      "put down the container"
+    ]
+  },
+  "PickHighlight": {
+    "file": "PickHighlight.md",
+    "sha256": "d0f2b143cef31ea3b7c455d20a1933657aec66afa54609dab11284dc136fd00f",
+    "templates": [
+      "press the button at <y, x>",
+      "pick up the highlighted cube at <y, x>, which is {color}",
+      "pick up the {ordinal} highlighted cube at <y, x>, which is {color}",
+      "place the cube onto the table"
+    ]
+  },
+  "VideoUnmask": {
+    "file": "VideoUnmask.md",
+    "sha256": "6f81cc039b458bec648cc2b0cd92d843c142db17a42ea5aed7c9ad285e48daba",
+    "templates": [
+      "pick up the container at <y, x> that hides the {color} cube",
+      "put down the container"
+    ]
+  },
+  "VideoUnmaskSwap": {
+    "file": "VideoUnmaskSwap.md",
+    "sha256": "83fab0f49bad0f406a77bb0f893f2386ec730d20bddd151dfddd5be0bfb931da",
+    "templates": [
+      "pick up the container at <y, x> that hides the {color} cube",
+      "put down the container"
+    ]
+  },
+  "VideoPlaceButton": {
+    "file": "VideoPlaceButton.md",
+    "sha256": "758b03757d88d20f8b38fc3bd28abea3600f11e4c2462f0cc426d0227089215b",
+    "templates": [
+      "pick up the cube at <y, x>",
+      "place the cube onto the correct target at <y, x>"
+    ]
+  },
+  "VideoPlaceOrder": {
+    "file": "VideoPlaceOrder.md",
+    "sha256": "107e17228f1b3855dc8e7421541946ed452e184038f57fc78ce1f5d58a2083bb",
+    "templates": [
+      "pick up the cube at <y, x>",
+      "place the cube onto the correct target at <y, x>"
+    ]
+  },
+  "VideoRepick": {
+    "file": "VideoRepick.md",
+    "sha256": "b838bd01a039e251222ef7326fe6b62c541091fda16a6060154a468cf39f0e08",
+    "templates": [
+      "pick up the correct cube at <y, x> for the {ordinal} time",
+      "put it down",
+      "press the button at <y, x> to finish"
+    ]
+  },
+  "MoveCube": {
+    "file": "MoveCube.md",
+    "sha256": "c1436ac91c9ca227bbb94efa0fdc6333117f25307526ed26c224908362061e0a",
+    "templates": [
+      "Pick up the peg at <y, x>",
+      "Hook the cube at <y, x> to the target at <y, x> with the peg",
+      "Close the gripper and push the cube at <y, x> to the target at <y, x>",
+      "Pick up the cube at <y, x>",
+      "place the cube onto the target at <y, x>"
+    ]
+  },
+  "InsertPeg": {
+    "file": "InsertPeg.md",
+    "sha256": "8556b3be309c1765370eb5ab114b9f9e023a1b8c07f51ead23baa27e99d3aea1",
+    "templates": [
+      "Pick up the peg by grasping the {near_or_far} end at <y, x>",
+      "Insert the peg from the {left_or_right} side at <y, x>"
+    ]
+  },
+  "PatternLock": {
+    "file": "PatternLock.md",
+    "sha256": "a1f4035e7c404f07f24cb47c5264661dbf44104ef40c555842a10424c7fd8c59",
+    "templates": [
+      "move forward",
+      "move backward",
+      "move left",
+      "move right",
+      "move forward-left",
+      "move forward-right",
+      "move backward-left",
+      "move backward-right"
+    ]
+  },
+  "RouteStick": {
+    "file": "RouteStick.md",
+    "sha256": "3d23b4f27f84b1dcf5fe1be02fc69e9aa2a7e609cc562da5d6a09b911d51bdb6",
+    "templates": [
+      "move to the nearest {left_or_right} target by circling around the stick {clockwise_or_counterclockwise}"
+    ]
+  }
+}

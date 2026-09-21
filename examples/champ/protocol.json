@@ -1,0 +1,49 @@
+{
+  "dataset": "test",
+  "tasks": [
+    "BinFill",
+    "PickXtimes",
+    "SwingXtimes",
+    "StopCube",
+    "ButtonUnmask",
+    "ButtonUnmaskSwap",
+    "PickHighlight",
+    "VideoUnmask",
+    "VideoUnmaskSwap",
+    "VideoPlaceButton",
+    "VideoPlaceOrder",
+    "VideoRepick",
+    "MoveCube",
+    "InsertPeg",
+    "PatternLock",
+    "RouteStick"
+  ],
+  "episodes_per_task": 50,
+  "max_steps": 1300,
+  "action_chunk": 16,
+  "vla_seed": 42,
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "max_output_tokens": 2048,
+  "image_detail": "high",
+  "transport": "Responses API",
+  "store": false,
+  "max_planner_calls": 24,
+  "monitor_checkpoint": 2246,
+  "monitor_recent_frames": 8,
+  "monitor_stride": 3,
+  "monitor_extra_frames": [
+    "command-start front",
+    "current wrist"
+  ],
+  "monitor_max_tokens": 8,
+  "monitor_temperature": 0,
+  "image_max_token_num": 128,
+  "stopcube_cooldown": 32,
+  "second_button_review": "ButtonUnmaskSwap only; every positive second-button trigger; true required to advance",
+  "failure_policy": "Preserve inherited error outcomes; never automatically rerun episodes; count every selected identity in denominator",
+  "supported_datasets": [
+    "test",
+    "val"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "monitor": {
+    "base_model": "Qwen/Qwen3-VL-4B-Instruct",
+    "base_download_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+    "base_revision_evidence": "Public revision pinned at packaging time; original GCP base snapshot was not independently hashed.",
+    "checkpoint": 2246,
+    "files": {
+      "adapter_model.safetensors": "eddc88eb55e5fd97c4f84650b14ed6ff92e500834330ec12dcc1550a27f6578a",
+      "adapter_config.json": "93ae4196473b972135f772cf48a0fb1734cc8d1210f41162dcd3e3296115f45f",
+      "additional_config.json": "c7799462ebedae6557ffad31566029e2d2f958b7b40e46e972cf901bcaf45733"
+    },
+    "original_adapter_config_sha256": "cd7d132c1fb8c0bf070720ebfd942990bae91c54fb666d7aba2cae3406b7a379",
+    "config_change": "Only base_model_name_or_path changed from a machine path to the public model id. Tensor bytes unchanged.",
+    "repo_id": "bingaochen/Astra-on-RoboMME-Monitor",
+    "revision": "18ac28316a8b22c758945546c95f3910fc5dd27b"
+  },
+  "vla": {
+    "repo_id": "Yinpei/mme_vla_suite",
+    "revision": "5db4d53ddb98c7f80cab08792dd53d985d712ab1",
+    "files": [
+      "symbolic-grounded-subgoal/79999.zip",
+      "symbolic-grounded-subgoal/history_config.txt"
+    ],
+    "seed": 42,
+    "evidence": "Public revision pinned at packaging time; original GCP VLA tensors have not been independently compared byte for byte."
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "source_run": "button_swap_final50_20260918",
+  "source_runtime_sha256": {
+    "train_entry.py": "632fc97c6ba418fa2d35b3fc85070fdb1fc112e0d9cb76905d295e928baf5912",
+    "runner.py": "e319478b6e0ffd16dc5b8d866f4183d314f7f560db2631752bd63757619b8975",
+    "test_button_review.py": "929686a2cee7243ad0f1e0abbe7a68f5b88174bfca3aa8594687c1bd69aef894",
+    "test_api_retry.py": "f7b49b9e275b69a0ff62633be134605e5bf634c91b6832d117394938b178e6fa",
+    "input_contract.py": "066d5b01d767ab4f3e2931022601763e2bbc0557bf93055f9372eed86b1d2e59",
+    "test_core.py": "9c79da35442f511729dcedec296e6f5a631664433c44dcf4bff9a25e19fff50f",
+    "core.py": "7095550ef19e7476932077dbbdcf3f10aa2bec586464d3d4097d79938a1429e5",
+    "test_input_contract.py": "40dd867efa7834ce2c76f3fa1526a1e4f2a290867d9c8068b98be617f10fe933",
+    "test_loop.py": "608330a4839d3a9a1bfe1450f488be2d3a23e29a19161d845da7db7c39a9bd54",
+    "api_client.py": "9e8e9d56290b764e61e72e31e3e8905d3dfea4661ba2be29f95ca1d3ae0fd808",
+    "prompts/BinFill.md": "63752dca35940eefa3a8b584a40731c18a9df6ccb2ad0ef3bd3b358427c3d150",
+    "prompts/second_button_review.md": "fd60589b87efa8a6819d40db8433e365caad4fa57aba7cfaab66d3bc3131a441",
+    "prompts/VideoRepick.md": "b838bd01a039e251222ef7326fe6b62c541091fda16a6060154a468cf39f0e08",
+    "prompts/ButtonUnmask.md": "098576d1484a8937d1c2cafba59d8561637d4896d0942ddae3d75b49c664a200",
+    "prompts/PatternLock.md": "a1f4035e7c404f07f24cb47c5264661dbf44104ef40c555842a10424c7fd8c59",
+    "prompts/common.md": "c7fe6da1a6d6e98635f8e0a5dc6e6c6cc16622bfdf7b09677fb9b420d8e7848f",
+    "prompts/RouteStick.md": "3d23b4f27f84b1dcf5fe1be02fc69e9aa2a7e609cc562da5d6a09b911d51bdb6",
+    "prompts/VideoPlaceButton.md": "758b03757d88d20f8b38fc3bd28abea3600f11e4c2462f0cc426d0227089215b",
+    "prompts/InsertPeg.md": "8556b3be309c1765370eb5ab114b9f9e023a1b8c07f51ead23baa27e99d3aea1",
+    "prompts/StopCube.md": "da81d9577a25cf2a0527bc7fc9726b55f1a5dbbd3075a2ad49c68a213f7e35d0",
+    "prompts/PickHighlight.md": "d0f2b143cef31ea3b7c455d20a1933657aec66afa54609dab11284dc136fd00f",
+    "prompts/ButtonUnmaskSwap.md": "07fed10044ac2672f245c924669eb0e1a9c21dae130c353d5461155eab2cdd12",
+    "prompts/VideoPlaceOrder.md": "107e17228f1b3855dc8e7421541946ed452e184038f57fc78ce1f5d58a2083bb",
+    "prompts/VideoUnmask.md": "6f81cc039b458bec648cc2b0cd92d843c142db17a42ea5aed7c9ad285e48daba",
+    "prompts/MoveCube.md": "c1436ac91c9ca227bbb94efa0fdc6333117f25307526ed26c224908362061e0a",
+    "prompts/SwingXtimes.md": "17ecf5c8afb21cea93c149caf6792aaa7ee834086307a4b20ef45b1ee1cecaec",
+    "prompts/PickXtimes.md": "5408a978bedff08591b849d70d7f960f652bf108be7d8947ce04252805db85f7",
+    "prompts/index.json": "7af5473e3ee00ed0d932d4e6a459114fa17d65862d29a008817c9fe420836f9a",
+    "prompts/VideoUnmaskSwap.md": "83fab0f49bad0f406a77bb0f893f2386ec730d20bddd151dfddd5be0bfb931da"
+  },
+  "policy_repository_base_commit": "ecf086c3be7c2223167d9bb2f6ef1f0a6e24353b",
+  "benchmark_commit": "856bc3a189d4172f3f47dbee4424d585f8d78db3",
+  "portability_changes": [
+    "Runtime paths become CLI arguments; credentials from OPENAI_API_KEY or a non-destructive key-file read.",
+    "New output/spool required and case/checkpoint input validated before model initialization.",
+    "Prompt index file/sha256 metadata refreshed; templates and all prompt bodies unchanged.",
+    "Episode control flow, Monitor.predict, core.py and input_contract.py preserved.",
+    "Explicit test/val split is passed to the simulator and recorded in identity, result and completion metadata; default case generation selects test."
+  ],
+  "verification": {
+    "cpu_unittests": 48,
+    "cpu_test_python": "3.9 (macOS); production installation specifies 3.11",
+    "gpu_or_paid_api_run": false,
+    "exact_episode_ast": "Historical packaging check passed after path normalization; current handoff additionally records the selected split, without changing episode control decisions.",
+    "all_16_task_prompts_and_review": "Byte-identical to deployed final50 source",
+    "benchmark_submodule": "Cloned successfully at pinned commit",
+    "fresh_linux_install": "Not executed",
+    "weight_tensor_sha256_verified": "Downloaded original checkpoint-2246 tensor; portable config changes only base model path"
+  }
+}
