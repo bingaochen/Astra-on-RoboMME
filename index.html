@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Can Astra Solve RoboMME without Breaking the Bank?</title>
+<meta name="description" content="An efficient three-tier system for GPT-6 Astra on RoboMME: Astra plans, fine-tuned Qwen3-VL-4B monitors completion, and fine-tuned π0.5 acts.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%238C1515'/%3E%3Cpath d='M10 29L20 9l10 20M14 23h12' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<link rel="stylesheet" href="styles.css?v=20260921-citation">
+<script defer src="assets/katex/katex.min.js"></script>
+<script defer src="assets/method-math.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to article</a>
+
+<main id="main">
+<section class="hero">
+
+<h1>Can Astra Solve RoboMME without Breaking the Bank?</h1>
+<p class="hero-line">A Three-Tier System for Memory-Augmented Manipulation</p>
+
+<p class="authors"><a href="https://bingaochen.github.io/">Bingao Chen</a><span class="author-space">&nbsp;&nbsp;</span> <a href="https://hq-fang.github.io/">Haoquan Fang</a><span class="author-space">&nbsp;&nbsp;</span> <a href="https://tml.stanford.edu/">C. Karen Liu</a></p>
+<p class="affiliation">Stanford University</p>
+<div class="links"><a class="button primary" href="https://github.com/bingaochen/Astra-on-RoboMME">Code <span>↗</span></a></div>
+</section>
+<nav class="section-nav" aria-label="Article sections">
+<a href="#idea">Introduction</a><a href="#method">Methods</a><a href="#results">Results</a><a href="#videos">Videos</a>
+</nav>
+<section class="opening-teaser" aria-labelledby="opening-results-title">
+<h2 id="opening-results-title" class="sr-only">Astra on RoboMME: results and memory-augmented manipulation</h2>
+<figure>
+<video autoplay muted loop controls playsinline preload="metadata" width="1920" height="1080" poster="assets/teaser/astra-robomme-v8.jpg" aria-label="RoboMME success-rate comparison and four successful hard test episodes, with System 2 subgoals and System 1.5 completion checks"><source src="assets/teaser/astra-robomme-v8.mp4" type="video/mp4">Your browser does not support embedded video. <a href="assets/teaser/astra-robomme-v8.mp4">Download the teaser.</a></video>
+</figure>
+</section>
+<section class="abstract-section" id="abstract" aria-labelledby="abstract-title">
+<h2 id="abstract-title">Abstract</h2>
+<p>Memory-augmented robotic manipulation uses past observations to guide present actions, requiring visual histories to be understood and translated into executable subtasks. We present a three-tier system: <strong>System 1</strong>, a low-level vision-language-action model (VLA), executes actions; <strong>System 2</strong>, GPT-6 Astra, performs high-level planning; and <strong>System 1.5</strong>, a small learned vision-language model, monitors subtask completion. Astra interprets the task and its visual context to generate a grounded subtask. The VLA executes this instruction over successive action chunks, while a small vision-language model checks whether the subtask has finished. Completion events trigger new planning calls, separating frequent progress checks from expensive high-level reasoning. This design brings Astra’s planning capabilities into a closed-loop controller while avoiding a new Astra request at every action chunk. On 800 official RoboMME test episodes across 16 tasks, the controller achieves 79.13% success with an average of 3.63 Astra calls per episode and an average wall-clock episode duration of 80.84 seconds. This nearly matches the 84.08% success rate of GroundSG+Oracle, an oracle-guided upper-bound reference for grounded-subgoal policies.</p>
+</section>
+<div class="article-layout"><div class="article">
+<section id="idea"><h2>1. Introduction</h2>
+<p>Many robot tasks depend on information that is no longer visible. A demonstration may specify the order of several actions; a target may disappear under a container; a moving object may need to pass a location a certain number of times. RoboMME <a class="citation" href="#ref-robomme" title="RoboMME: Benchmarking and Understanding Memory for Robotic Generalist Policies">[1]</a> brings these challenges together: the robot must understand what happened earlier to choose the right action now.</p>
+<p>Hierarchical systems such as MEM <a class="citation" href="#ref-mem" title="MEM: Multi-Scale Embodied Memory for Vision Language Action Models">[2]</a> and τ₀-VLA <a class="citation" href="#ref-tau0" title="τ₀-VLA: a Hierarchical Robot Foundation Model with World-Model-Guided Test-Time Computation">[3]</a> offer a natural starting point: a high-level VLM decides the next subtask, and a low-level VLA executes it. In our development experiments, small high-level VLMs struggled with complex RoboMME video inputs and produced incorrect subtasks. This motivated us to put Astra in charge of high-level understanding and planning.</p>
+<p>But a robot does not need to reconsider the entire task every time it takes another action. Once a subtask has been chosen, execution may continue for many action chunks. Repeatedly asking Astra to process the visual history during this period adds inference work even when the next instruction should remain unchanged.</p>
+<p><strong>Our solution is System 1.5: a small visual completion monitor that connects planning and action.</strong> System 2 (Astra) decides what to do; System 1 (the low-level VLA) carries it out; System 1.5 decides when it is time to ask the planner again. This gives the small model a focused job while keeping complex video understanding with the stronger planner.</p>
+</section>
+<section id="method"><h2>2. Methods</h2>
+<figure class="method-figure">
+<img src="assets/three-tiered-system-method-v2.png" width="1860" height="846" alt="Three-tier system control loop: System 2, GPT-6 Astra, generates a grounded subtask for System 1, fine-tuned π0.5. After 16 execution steps, System 1.5, fine-tuned Qwen3-VL-4B, checks completion. An incomplete subtask returns control to the VLA; completion triggers the next Astra planning call.">
+<figcaption><strong>Figure 1. Three-tier system.</strong> System 1 (fine-tuned π0.5) executes low-level actions, System 2 (GPT-6 Astra) plans grounded subtasks, and System 1.5 (fine-tuned Qwen3-VL-4B) monitors completion. The planner uses task instructions and visual history, while the monitor checks completion from recent observations. An incomplete subtask continues under the same instruction; completion triggers the next planning call.</figcaption>
+</figure>
+<p>The controller separates three decisions: <strong>what to do next, how to execute it, and when to move on.</strong> Astra plans a grounded subtask, the VLA carries it out, and a small visual monitor checks completion.</p>
+<p class="module-notation">Let <span class="math-inline">g</span> denote the task instruction, <span class="math-inline">o_t</span> the current observation, and <span class="math-inline">l_k</span> the active grounded subtask. Here, <span class="math-inline">t</span> indexes environment steps and <span class="math-inline">k</span> indexes subtasks.</p>
+<h3>2.1 System 2: High-Level Planning with Astra</h3>
+<p>Astra chooses <strong>one grounded subtask at a time</strong>—an executable instruction with a target location where needed. We express the high-level policy as</p>
+<div class="module-equation" aria-label="High-level policy over grounded subtasks, conditioned on the current observation, memory, and task instruction.">\pi_{\mathrm{HL}}(l_k \mid o_t, m_t, g).</div>
+<p>The memory <span class="math-inline">m_t</span> collects relevant demonstration and execution history, together with subtask progress. This context helps Astra locate objects that have become hidden or follow a demonstrated action order. Each planning call combines that history with the current scene to select the next subtask.</p>
+<h3>2.2 System 1: Low-Level Action Execution</h3>
+<p>A π0.5 VLA fine-tuned for grounded-subgoal execution carries out the active subtask through a low-level policy,</p>
+<div class="module-equation" aria-label="Low-level policy over an action chunk, conditioned on the current observation, active subtask, and task instruction.">\pi_{\mathrm{LL}}(a_{t:t+H} \mid o_t, l_k, g).</div>
+<p>Here, <span class="math-inline">a_{t:t+H}</span> is an action chunk and <span class="math-inline">o_t</span> includes camera observations and robot state. The same <span class="math-inline">l_k</span> can guide multiple chunks: the instruction stays fixed while fresh observations guide the next actions.</p>
+<h3>2.3 System 1.5: Visual Completion Monitoring</h3>
+<p>A Qwen3-VL-4B model fine-tuned for completion detection predicts whether the active subtask has finished,</p>
+<div class="module-equation" aria-label="Completion prediction conditioned on visual context, the active subtask, and task instruction.">p_{\mathrm{MON}}(c_t \mid v_t, l_k, g), \qquad c_t \in \{0,1\}.</div>
+<p>The visual context <span class="math-inline">v_t</span> combines recent observations with a reference from the start of the subtask. The binary output indicates whether execution should continue or the planner should be consulted. <strong>This focused question lets the small model monitor execution while Astra handles task interpretation and planning.</strong></p>
+<h3>2.4 Event-Triggered Coordination</h3>
+<p>After each action chunk, the monitor determines whether to continue or request a new plan. A <code>false</code> result keeps the VLA working on the same instruction; a <code>true</code> result normally records completion and triggers Astra to select the next subtask. This loop ties replanning to detected progress instead of requesting a new plan after every action chunk.</p>
+<div id="efficiency"><h3>2.5 Inference Efficiency</h3>
+<p>Frequent progress checks run through the local monitor, reserving Astra calls for initial planning and subtask transitions.</p>
+<p>We initially tried running Astra and the VLA asynchronously, allowing the VLA to continue executing while Astra planned the next subtask. In these preliminary tests, most episodes timed out: the VLA exhausted the 1,300-step budget before Astra returned the next subgoal. For the reported experiments, we therefore follow the synchronous execution used in RoboMME’s official two-system evaluation implementation, pausing the simulation during planner inference. These waits add wall-clock time but do not consume environment steps.</p>
+</div>
+</section>
+<section id="results"><h2>3. Results</h2>
+<h3>3.1 Experimental Setup</h3>
+<p>We evaluated our pipeline on <strong>800 official RoboMME test episodes across 16 tasks, with 50 episodes per task</strong>, following RoboMME’s official evaluation protocol.</p>
+<h3>3.2 Task Performance</h3>
+<p><strong>Our controller achieves 79.13% success, approaching GroundSG+Oracle’s 84.08%.</strong> Baselines include the current-observation policy π0.5 <a class="citation" href="#ref-pi05" title="π0.5: a Vision-Language-Action Model with Open-World Generalization">[4]</a>, the visual-history method FrameSamp+Modul, SAM2Act+ <a class="citation" href="#ref-sam2act" title="SAM2Act: Integrating Visual Foundation Model with A Memory Architecture for Robotic Manipulation">[6]</a> (visual memory bank), and three VLM–VLA dual-system methods: MemER <a class="citation" href="#ref-memer" title="MemER: Scaling Up Memory for Robot Control via Experience Retrieval">[5]</a> (keyframe memory), GroundSG+QwenVL (fine-tuned planner), and GroundSG+Gemini (prompted planner) <a class="citation" href="#ref-robomme" title="RoboMME grounded-subgoal baselines">[1]</a>. GroundSG+Oracle supplies ground-truth subgoals to the low-level VLA, providing an empirical upper-bound reference for our approach. Baseline scores come from the official RoboMME leaderboard.</p>
+<figure class="results-figure"><img src="assets/results/baseline-comparison.svg" width="1220" height="480" loading="lazy" alt="Overall success: 3-tier Astra (Ours) 79.13%, GroundSG+Oracle 84.08%, FrameSamp+Modul 44.51%, MemER 42.38%, GroundSG+QwenVL 32.70%, SAM2Act+ 21.37%, pi0.5 17.93%, GroundSG+Gemini 11.56%. A second panel compares Astra with Oracle across four task suites."><figcaption><strong>Figure 2.</strong> Overall and suite-level success. Teal: our controller; gold: GroundSG+Oracle with ground-truth subgoals.</figcaption></figure>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Baseline comparison; scroll horizontally on smaller screens"><table class="baseline-results"><caption>Success rates (%) on the official test set</caption><thead><tr><th scope="col">Method</th><th scope="col">Counting</th><th scope="col">Permanence</th><th scope="col">Reference</th><th scope="col">Imitation</th><th scope="col">Overall</th></tr></thead><tbody><tr><th scope="row">π0.5<small>Current-observation policy</small></th><td>28.78</td><td>17.00</td><td>17.16</td><td>8.78</td><td>17.93</td></tr><tr><th scope="row">GroundSG+Gemini<small>Grounded subgoals · prompted VLM</small></th><td>12.75</td><td>15.75</td><td>11.25</td><td>6.50</td><td>11.56</td></tr><tr><th scope="row">GroundSG+QwenVL<small>Grounded subgoals · fine-tuned VLM</small></th><td>38.00</td><td>39.34</td><td>31.56</td><td>21.89</td><td>32.70</td></tr><tr><th scope="row">SAM2Act+<small>Visual memory bank</small></th><td>35.33</td><td>26.00</td><td>16.83</td><td>7.33</td><td>21.37</td></tr><tr><th scope="row">MemER<small>Visual keyframes + symbolic subgoals</small></th><td>48.83</td><td>53.17</td><td>38.00</td><td>29.50</td><td>42.38</td></tr><tr><th scope="row">FrameSamp+Modul<small>Perceptual memory</small></th><td>65.22</td><td>25.11</td><td>36.33</td><td>51.39</td><td>44.51</td></tr><tr class="ours-row"><th scope="row">3-tier Astra (Ours)<small>Astra planner + learned monitor</small></th><td>69.50</td><td>94.00</td><td>92.00</td><td>61.00</td><td>79.13</td></tr><tr class="oracle-row"><th scope="row">GroundSG+Oracle<small>Ground-truth subgoals · reference</small></th><td>83.86</td><td>93.31</td><td>95.17</td><td>63.98</td><td>84.08</td></tr></tbody></table></div>
+<p><strong>Our Astra-based controller outperforms all three dual-system baselines across all four task suites.</strong> Overall success reaches 79.13%, compared with 42.38% for MemER, 32.70% for GroundSG+QwenVL, and 11.56% for GroundSG+Gemini. The largest gains over MemER, the strongest of these dual-system baselines, appear in Permanence and Reference: our method achieves <strong>94.00% and 92.00%</strong>, versus 53.17% and 38.00%. On Imitation, which requires interpreting demonstrated behavior, success rises from 29.50% to 61.00%.</p>
+<p>These results support pairing <strong>Astra’s visual and temporal reasoning with completion-triggered planning</strong> for memory-dependent manipulation. Astra uses demonstrations and execution history to choose the next grounded subtask, while the monitor checks whether that subtask has finished. This division keeps Astra focused on decisions that require broader context and lets the VLA continue executing between planning events. The resulting controller combines strong task performance with infrequent Astra calls, as quantified below.</p>
+<details><summary>All 16 tasks: success, failure, and timeout counts <span>+</span></summary><div class="details-body"><div class="table-scroll" tabindex="0" role="region" aria-label="Per-task results; scroll horizontally on smaller screens"><table class="task-results"><caption>Official test outcomes · 50 episodes per task</caption><thead><tr><th scope="col">Task</th><th scope="col">Success</th><th scope="col">Fail</th><th scope="col">Timeout</th><th scope="col">Success rate</th></tr></thead><tbody><tr><th scope="row">BinFill</th><td>41</td><td>6</td><td>3</td><td>82.00%</td></tr>
+<tr><th scope="row">StopCube</th><td>9</td><td>41</td><td>0</td><td>18.00%</td></tr>
+<tr><th scope="row">PickXtimes</th><td>48</td><td>1</td><td>1</td><td>96.00%</td></tr>
+<tr><th scope="row">SwingXtimes</th><td>41</td><td>9</td><td>0</td><td>82.00%</td></tr>
+<tr><th scope="row">ButtonUnmask</th><td>50</td><td>0</td><td>0</td><td>100.00%</td></tr>
+<tr><th scope="row">VideoUnmask</th><td>46</td><td>1</td><td>3</td><td>92.00%</td></tr>
+<tr><th scope="row">VideoUnmaskSwap</th><td>50</td><td>0</td><td>0</td><td>100.00%</td></tr>
+<tr><th scope="row">ButtonUnmaskSwap</th><td>42</td><td>6</td><td>2</td><td>84.00%</td></tr>
+<tr><th scope="row">PickHighlight</th><td>42</td><td>0</td><td>8</td><td>84.00%</td></tr>
+<tr><th scope="row">VideoRepick</th><td>43</td><td>3</td><td>4</td><td>86.00%</td></tr>
+<tr><th scope="row">VideoPlaceButton</th><td>50</td><td>0</td><td>0</td><td>100.00%</td></tr>
+<tr><th scope="row">VideoPlaceOrder</th><td>49</td><td>0</td><td>1</td><td>98.00%</td></tr>
+<tr><th scope="row">MoveCube</th><td>40</td><td>4</td><td>6</td><td>80.00%</td></tr>
+<tr><th scope="row">InsertPeg</th><td>9</td><td>5</td><td>36</td><td>18.00%</td></tr>
+<tr><th scope="row">PatternLock</th><td>44</td><td>6</td><td>0</td><td>88.00%</td></tr>
+<tr><th scope="row">RouteStick</th><td>29</td><td>21</td><td>0</td><td>58.00%</td></tr></tbody><tfoot><tr><th scope="row">Overall</th><td>633</td><td>103</td><td>64</td><td>79.13%</td></tr></tfoot></table></div></div></details>
+<h3>3.3 Inference Usage</h3>
+<p>Our pipeline averages <strong>3.63 Astra calls per episode</strong>. A two-system controller calling Astra before every VLA action chunk would require an estimated <strong>24.62 calls per episode</strong> over the same recorded execution sequences. This corresponds to <strong>85.3% fewer Astra calls</strong>: the small local monitor handles frequent completion checks, allowing the VLA to reuse a subtask across multiple action chunks.</p>
+<div id="videos"><h3>3.4 Hard-Task Successes</h3>
+<p>Successful <strong>hard-difficulty test episodes, with one featured task per suite</strong>. Expand each suite for the remaining examples. The central robot view plays continuously; System 1.5’s completion checks (<span class="monitor-false-key">red: false</span>; <span class="monitor-true-key">green: true</span>) and <span class="s2-key">System 2’s subgoals</span> update alongside it.</p>
+<p class="caption">Nine video-conditioned tasks begin with their archived input demonstration, followed by execution. Input frames are displayed at 30 fps; their original timing was not recorded. Execution plays at 30 environment steps/s; highlights mark logged updates and inference waits are omitted.</p>
+<div class="hard-rollouts">
+<div class="rollout-suite"><h4 class="suite-heading">Counting</h4>
+<article class="hard-rollout" id="hard-BinFill">
+<div class="rollout-heading"><h4>BinFill</h4><span>Hard · test ep023 · Success · 663 steps</span></div>
+<p class="rollout-goal">put two blue cubes and one green cube into the bin, then press the button to stop</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-v3/BinFill-hard-test-ep023.jpg" aria-label="BinFill · Hard · test ep023 · Success · 663 steps"><source src="assets/results/hard-success-v3/BinFill-hard-test-ep023.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<details class="more-rollouts"><summary>More counting tasks (3)<span>+</span></summary><div class="details-body">
+<article class="hard-rollout" id="hard-PickXtimes">
+<div class="rollout-heading"><h4>PickXtimes</h4><span>Hard · test ep035 · Success · 638 steps</span></div>
+<p class="rollout-goal">pick up the blue cube and place it on the target, repeating this action four times, then press the button to stop</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-v3/PickXtimes-hard-test-ep035.jpg" aria-label="PickXtimes · Hard · test ep035 · Success · 638 steps"><source src="assets/results/hard-success-v3/PickXtimes-hard-test-ep035.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<article class="hard-rollout" id="hard-SwingXtimes">
+<div class="rollout-heading"><h4>SwingXtimes</h4><span>Hard · test ep047 · Success · 462 steps</span></div>
+<p class="rollout-goal">pick up the red cube, move it to the top of the right-side target, then move it to the top of the left-side target, repeating this back-and-forth motion three times, finally press the button to stop</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-v3/SwingXtimes-hard-test-ep047.jpg" aria-label="SwingXtimes · Hard · test ep047 · Success · 462 steps"><source src="assets/results/hard-success-v3/SwingXtimes-hard-test-ep047.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<article class="hard-rollout" id="hard-StopCube">
+<div class="rollout-heading"><h4>StopCube</h4><span>Hard · test ep011 · Success · 214 steps</span></div>
+<p class="rollout-goal">press the button to stop the cube just as it reaches the target for the fourth time</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-v3/StopCube-hard-test-ep011.jpg" aria-label="StopCube · Hard · test ep011 · Success · 214 steps"><source src="assets/results/hard-success-v3/StopCube-hard-test-ep011.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+</div></details></div>
+<div class="rollout-suite"><h4 class="suite-heading">Permanence</h4>
+<article class="hard-rollout" id="hard-ButtonUnmaskSwap">
+<div class="rollout-heading"><h4>ButtonUnmaskSwap</h4><span>Hard · test ep047 · Success · 531 steps</span></div>
+<p class="rollout-goal">first press both buttons on the table, then pick up the container hiding the green cube, finally pick up another container hiding the red cube</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-v3/ButtonUnmaskSwap-hard-test-ep047.jpg" aria-label="ButtonUnmaskSwap · Hard · test ep047 · Success · 531 steps"><source src="assets/results/hard-success-v3/ButtonUnmaskSwap-hard-test-ep047.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<details class="more-rollouts"><summary>More permanence tasks (3)<span>+</span></summary><div class="details-body">
+<article class="hard-rollout" id="hard-ButtonUnmask">
+<div class="rollout-heading"><h4>ButtonUnmask</h4><span>Hard · test ep007 · Success · 372 steps</span></div>
+<p class="rollout-goal">first press the button, then pick up the container hiding the red cube, finally pick up another container hiding the green cube</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-v3/ButtonUnmask-hard-test-ep007.jpg" aria-label="ButtonUnmask · Hard · test ep007 · Success · 372 steps"><source src="assets/results/hard-success-v3/ButtonUnmask-hard-test-ep007.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<article class="hard-rollout" id="hard-VideoUnmask">
+<div class="rollout-heading"><h4>VideoUnmask</h4><span>Hard · test ep019 · Success · 246 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then pick up the container hiding the green cube, finally pick up another container hiding the blue cube</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/VideoUnmask-hard-test-ep019.jpg" aria-label="VideoUnmask · Hard · test ep019 · Success · 246 steps"><source src="assets/results/hard-success-with-input-v2/VideoUnmask-hard-test-ep019.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<article class="hard-rollout" id="hard-VideoUnmaskSwap">
+<div class="rollout-heading"><h4>VideoUnmaskSwap</h4><span>Hard · test ep035 · Success · 245 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then pick up the container hiding the blue cube, finally pick up another container hiding the green cube</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/VideoUnmaskSwap-hard-test-ep035.jpg" aria-label="VideoUnmaskSwap · Hard · test ep035 · Success · 245 steps"><source src="assets/results/hard-success-with-input-v2/VideoUnmaskSwap-hard-test-ep035.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+</div></details></div>
+<div class="rollout-suite"><h4 class="suite-heading">Reference</h4>
+<article class="hard-rollout" id="hard-PickHighlight">
+<div class="rollout-heading"><h4>PickHighlight</h4><span>Hard · test ep039 · Success · 503 steps</span></div>
+<p class="rollout-goal">first press the button, then pick up all cubes that have been highlighteted with white areas on the table</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-v3/PickHighlight-hard-test-ep039.jpg" aria-label="PickHighlight · Hard · test ep039 · Success · 503 steps"><source src="assets/results/hard-success-v3/PickHighlight-hard-test-ep039.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<details class="more-rollouts"><summary>More reference tasks (3)<span>+</span></summary><div class="details-body">
+<article class="hard-rollout" id="hard-VideoRepick">
+<div class="rollout-heading"><h4>VideoRepick</h4><span>Hard · test ep015 · Success · 215 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then pick up the same block that was previously picked up again, finally put it down and press the button to stop</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/VideoRepick-hard-test-ep015.jpg" aria-label="VideoRepick · Hard · test ep015 · Success · 215 steps"><source src="assets/results/hard-success-with-input-v2/VideoRepick-hard-test-ep015.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<article class="hard-rollout" id="hard-VideoPlaceButton">
+<div class="rollout-heading"><h4>VideoPlaceButton</h4><span>Hard · test ep023 · Success · 162 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then place the red cube on the target right after the button was pressed</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/VideoPlaceButton-hard-test-ep023.jpg" aria-label="VideoPlaceButton · Hard · test ep023 · Success · 162 steps"><source src="assets/results/hard-success-with-input-v2/VideoPlaceButton-hard-test-ep023.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<article class="hard-rollout" id="hard-VideoPlaceOrder">
+<div class="rollout-heading"><h4>VideoPlaceOrder</h4><span>Hard · test ep007 · Success · 171 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then place the green cube on the third target it was previously placed on</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/VideoPlaceOrder-hard-test-ep007.jpg" aria-label="VideoPlaceOrder · Hard · test ep007 · Success · 171 steps"><source src="assets/results/hard-success-with-input-v2/VideoPlaceOrder-hard-test-ep007.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+</div></details></div>
+<div class="rollout-suite"><h4 class="suite-heading">Imitation</h4>
+<article class="hard-rollout" id="hard-RouteStick">
+<div class="rollout-heading"><h4>RouteStick</h4><span>Hard · test ep027 · Success · 263 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then use the stick attached to the robot to navigate around the sticks on the table, following the same path</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/RouteStick-hard-test-ep027.jpg" aria-label="RouteStick · Hard · test ep027 · Success · 263 steps"><source src="assets/results/hard-success-with-input-v2/RouteStick-hard-test-ep027.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<details class="more-rollouts"><summary>More imitation tasks (3)<span>+</span></summary><div class="details-body">
+<article class="hard-rollout" id="hard-MoveCube">
+<div class="rollout-heading"><h4>MoveCube</h4><span>Hard · test ep039 · Success · 100 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then move the cube to the target in the same manner as before</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/MoveCube-hard-test-ep039.jpg" aria-label="MoveCube · Hard · test ep039 · Success · 100 steps"><source src="assets/results/hard-success-with-input-v2/MoveCube-hard-test-ep039.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<article class="hard-rollout" id="hard-InsertPeg">
+<div class="rollout-heading"><h4>InsertPeg</h4><span>Hard · test ep003 · Success · 182 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then grasp the same end of the same peg you&#x27;ve picked before and insert it into the same side of the box</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/InsertPeg-hard-test-ep003.jpg" aria-label="InsertPeg · Hard · test ep003 · Success · 182 steps"><source src="assets/results/hard-success-with-input-v2/InsertPeg-hard-test-ep003.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+<article class="hard-rollout" id="hard-PatternLock">
+<div class="rollout-heading"><h4>PatternLock</h4><span>Hard · test ep007 · Success · 88 steps</span></div>
+<p class="rollout-goal">watch the video carefully, then use the stick attached to the robot to retrace the same pattern</p>
+<video controls playsinline preload="none" poster="assets/results/hard-success-with-input-v2/PatternLock-hard-test-ep007.jpg" aria-label="PatternLock · Hard · test ep007 · Success · 88 steps"><source src="assets/results/hard-success-with-input-v2/PatternLock-hard-test-ep007.mp4" type="video/mp4">Your browser does not support embedded video.</video>
+</article>
+</div></details></div>
+</div></div>
+</section>
+<section id="conclusion"><h2>4. Conclusion</h2><p>A more capable planner does not need to run at the same frequency as the action policy. Our three-tier system assigns low-level action execution to System 1, high-level reasoning to System 2, and frequent progress checks to System 1.5. The completion signal connects them into a closed loop.</p><p>The system can still make planning, monitoring, or execution errors. But the design offers a practical way to use a strong reasoning model in long-horizon manipulation: <strong>ask it for the next subtask when progress calls for a new decision.</strong></p></section>
+<section class="references" id="references"><h2>References</h2><ol>
+<li id="ref-robomme">Yinpei Dai, Hongze Fu, Jayjun Lee, Yuejiang Liu, Haoran Zhang, Jianing Yang, Chelsea Finn, Nima Fazeli, and Joyce Chai. <a href="https://arxiv.org/abs/2603.04639">RoboMME: Benchmarking and Understanding Memory for Robotic Generalist Policies.</a> In <em>International Conference on Machine Learning (ICML)</em>, 2026.</li>
+<li id="ref-mem">Marcel Torne, Karl Pertsch, Homer Walke, Kyle Vedder, Suraj Nair, et al. <a href="https://arxiv.org/abs/2603.03596">MEM: Multi-Scale Embodied Memory for Vision Language Action Models.</a> <em>arXiv preprint arXiv:2603.03596</em>, 2026.</li>
+<li id="ref-tau0">Xiaowei Cai, Yunuo Cai, Bingao Chen, Jingxiao Chen, Zhi Chen, et al. <a href="https://arxiv.org/abs/2608.16885">τ₀-VLA: a Hierarchical Robot Foundation Model with World-Model-Guided Test-Time Computation.</a> <em>arXiv preprint arXiv:2608.16885</em>, 2026.</li>
+<li id="ref-pi05">Kevin Black, Noah Brown, James Darpinian, Karan Dhabalia, Danny Driess, et al. <a href="https://proceedings.mlr.press/v305/black25a.html">π<sub>0.5</sub>: a Vision-Language-Action Model with Open-World Generalization.</a> In <em>Proceedings of The 9th Conference on Robot Learning (CoRL)</em>, PMLR 305:17–40, 2025.</li>
+<li id="ref-memer">Ajay Sridhar, Jennifer Pan, Satvik Sharma, and Chelsea Finn. <a href="https://proceedings.iclr.cc/paper_files/paper/2026/hash/9da515b1ad19d032a7398f00f5ff9b0c-Abstract-Conference.html">Scaling up Memory for Robotic Control via Experience Retrieval.</a> In <em>International Conference on Learning Representations (ICLR)</em>, 2026.</li>
+<li id="ref-sam2act">Haoquan Fang, Markus Grotz, Wilbert Pumacay, Yi Ru Wang, Dieter Fox, Ranjay Krishna, and Jiafei Duan. <a href="https://proceedings.mlr.press/v267/fang25c.html">SAM2Act: Integrating Visual Foundation Model with A Memory Architecture for Robotic Manipulation.</a> In <em>Proceedings of the 42nd International Conference on Machine Learning (ICML)</em>, PMLR 267:15925–15942, 2025.</li>
+</ol></section>
+<section class="citation-section" id="citation" aria-labelledby="citation-title">
+<h2 id="citation-title">Citation</h2>
+<p>If you find this work useful, please consider citing it:</p>
+<pre tabindex="0" aria-label="BibTeX citation"><code>@misc{chen2026astraonrobomme,
+  title  = {Can {Astra} Solve {RoboMME} without Breaking the Bank?},
+  author = {Chen, Bingao and Fang, Haoquan and Liu, C. Karen},
+  year   = {2026},
+  url    = {https://github.com/bingaochen/Astra-on-RoboMME}
+}</code></pre>
+<a href="assets/citation.bib" download>Download BibTeX</a>
+</section>
+</div></div>
+</main><footer><p>Can Astra Solve RoboMME without Breaking the Bank? · Stanford University</p><p>Private draft · Official test results and selected rollouts</p></footer>
+</body></html>
